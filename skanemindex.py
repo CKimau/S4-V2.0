@@ -11,8 +11,6 @@ import time  # <-- ADD THIS IMPORT
 from datetime import datetime, timedelta  # <-- REMOVE 'time' from here
 from dateutil.relativedelta import relativedelta
 from io import BytesIO
-import plotly.graph_objects as go
-from plotly.subplots import make_subplots
 from prophet import Prophet
 from prophet.plot import plot_plotly
 from prophet.diagnostics import performance_metrics
@@ -3290,4 +3288,5 @@ with footer_cols[2]:
 if __name__ == "__main__":
 
     pass
+
 
