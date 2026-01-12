@@ -11,15 +11,12 @@ import time  # <-- ADD THIS IMPORT
 from datetime import datetime, timedelta  # <-- REMOVE 'time' from here
 from dateutil.relativedelta import relativedelta
 from io import BytesIO
-
-import plotly.express as px
+import plotly
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-
 from prophet import Prophet
 from prophet.plot import plot_plotly
 from prophet.diagnostics import performance_metrics
-
 from sklearn.model_selection import cross_validate, TimeSeriesSplit
 from sklearn.metrics import mean_squared_error, mean_absolute_percentage_error, r2_score
 from sklearn.cluster import KMeans
@@ -27,7 +24,6 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.ensemble import IsolationForest, RandomForestRegressor
 from sklearn.linear_model import LinearRegression
 from sklearn.neural_network import MLPRegressor
-
 from statsmodels.tsa.holtwinters import ExponentialSmoothing
 from statsmodels.tsa.seasonal import seasonal_decompose
 from statsmodels.tsa.stattools import adfuller
@@ -3293,4 +3289,5 @@ with footer_cols[2]:
 
 # Run the app
 if __name__ == "__main__":
+
     pass
