@@ -36,14 +36,17 @@ from PIL import Image
 import random
 
 # ================== STREAMLIT CONFIG (MUST BE FIRST) ==================
-import streamlit as st
 import base64
 from pathlib import Path
 
-def get_base64_image(image_path):
-    """Convert image to base64 for HTML embedding"""
-    with open(image_path, "rb") as img_file:
-        return base64.b64encode(img_file.read()).decode()
+# NOTE:
+# - Streamlit Cloud / Linux cannot access Windows local paths.
+# - Keep logo in your repo under: assets/logo.jpg
+# - Locally, you can still point to a Windows path via an env var if you want.
+
+APP_DIR = Path(__file__).resolve().parent
+ASSETS_DIR = APP_DIR / "assets"
+DEFAULT_LOGO_PATH = ASSETS_DIR / "logo.jpg"
 
 st.set_page_config(
     page_title="SForecast - Intelligent Forecasting Platform",
@@ -51,15 +54,41 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-LOGO_PATH = Path(r"C:/Users/chris.mutuku/OneDrive - Skanem AS/Desktop/logo.jpg")
+def _get_base64_image(image_path: Path) -> str:
+    """Convert image to base64 for HTML embedding."""
+    return base64.b64encode(image_path.read_bytes()).decode()
 
-if LOGO_PATH.exists():
-    try:
-        img_base64 = get_base64_image(LOGO_PATH)
+
+def resolve_logo_path() -> Path | None:
+    """Resolve a usable logo path.
+
+    Priority:
+      1) env var SFORECAST_LOGO
+      2) repo asset ./assets/logo.jpg
+      3) None (fallback to text header)
+    """
+    env_path = os.getenv("SFORECAST_LOGO")
+    if env_path:
+        p = Path(env_path)
+        if p.exists():
+            return p
+
+    if DEFAULT_LOGO_PATH.exists():
+        return DEFAULT_LOGO_PATH
+
+    return None
+
+
+LOGO_PATH = resolve_logo_path()
+
+# Render header (logo + title) with graceful fallback
+try:
+    if LOGO_PATH and LOGO_PATH.exists():
+        img_base64 = _get_base64_image(LOGO_PATH)
         st.markdown(
             f"""
             <div style="display:flex; align-items:center; gap:10px; margin-bottom:20px;">
-                <img src="data:image/jpeg;base64,{img_base64}" width="44" style="border-radius:8px;">
+                <img src="data:image/jpeg;base64,{img_base64}" width=44 style="border-radius:8px;">
                 <div>
                     <h1 style="margin:0; color:#0E4E4E;">SForecast</h1>
                     <p style="margin:0; color:#666; font-size:14px;">Intelligent Forecasting Platform</p>
@@ -68,14 +97,13 @@ if LOGO_PATH.exists():
             """,
             unsafe_allow_html=True
         )
-    except:
-        # Fallback if image loading fails
+    else:
         st.title("SForecast")
         st.caption("Intelligent Forecasting Platform")
-else:
-    # Fallback if logo file doesn't exist
+except Exception:
     st.title("SForecast")
     st.caption("Intelligent Forecasting Platform")
+
 # Add some spacing
 st.divider()
 # ================== DATABASE ==================
@@ -309,7 +337,7 @@ def register_user(username, password):
         return False
 
 # ================== AUTH UI ==================
-LOGO_PATH = "C:/Users/chris.mutuku/OneDrive - Skanem AS/Desktop/logo.jpg"
+AUTH_LOGO_PATH = LOGO_PATH
 
 def authenticate():
     if st.session_state.authenticated:
@@ -326,7 +354,7 @@ def authenticate():
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
         try:
-            st.image(Image.open(LOGO_PATH), width=44)
+            st.image(Image.open(AUTH_LOGO_PATH), width=44)
         except:
             pass
 
@@ -367,23 +395,31 @@ authenticate()
 # ================== TOP BAR CONTROLS ==================
 with st.sidebar:
     st.markdown("### ⚙️ Settings")
-    
-    if st.toggle("🌗 Dark / Light Mode"):
-        st.session_state.theme_mode = "light" if st.session_state.theme_mode == "dark" else "dark"
+
+    theme_is_light = st.toggle(
+        "🌗 Dark / Light Mode",
+        value=(st.session_state.theme_mode == "light"),
+        key="theme_toggle",
+    )
+
+    # Only change mode when the toggle state differs
+    desired_mode = "light" if theme_is_light else "dark"
+    if st.session_state.theme_mode != desired_mode:
+        st.session_state.theme_mode = desired_mode
         st.rerun()
-    
+
     st.markdown("---")
-    
+
     # Quick Actions
     st.markdown("### ⚡ Quick Actions")
     if st.button("🔄 Refresh All Data"):
         st.success("Data refreshed!")
-    
+
     if st.button("📊 Generate Reports"):
         st.info("Report generation started...")
-    
+
     st.markdown("---")
-    
+
     if st.button("🚪 Logout", type="secondary"):
         st.session_state.authenticated = False
         st.rerun()
@@ -1101,9 +1137,9 @@ with tabs[0]:
                     forecast_data = df_forecast.to_json(orient='records')
                     
                     c.execute('''INSERT INTO forecasts 
-                                 (material_name, forecast_type, horizon, forecast_data, created_at) 
+                                 (forecast_id, material_name, forecast_type, horizon, forecast_data) 
                                  VALUES (?, ?, ?, ?, ?)''',
-                                 (material_name, "Basic", forecast_horizon, forecast_data, datetime.now()))
+                                 (f"basic_{datetime.now().strftime('%Y%m%d_%H%M%S')}", material_name, "Basic", forecast_horizon, forecast_data))
                     
                     conn.commit()
                     conn.close()
@@ -3293,8 +3329,4 @@ with footer_cols[2]:
 
 # Run the app
 if __name__ == "__main__":
-
     pass
-
-
-
