@@ -12,6 +12,9 @@ pillow>=10.0.0
 
 prophet==1.1.5
 cmdstanpy>=1.2.2
+python-3.11
+
+
 
 
 
